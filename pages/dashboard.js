@@ -7,6 +7,7 @@ import ProductTable from "../components/ProductTable"
 import ProductStats from "../components/ProductStats"
 import AddProductModal from "../components/AddProductModal"
 import FloatingButton from "../components/FloatingButton"
+import PricingCalculator from "../components/PricingCalculator"
 
 export default function Dashboard() {
   const [products, setProducts] = useState([])
@@ -122,9 +123,11 @@ export default function Dashboard() {
           />
 
           <ProductStats products={filtered} />
-          
           <div className="mt-8">
             <ProductTable products={filtered} onRefresh={fetchProducts} />
+          </div>
+          <div className="mt-8">
+            <PricingCalculator />
           </div>
         </main>
 
