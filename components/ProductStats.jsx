@@ -5,14 +5,27 @@ export default function ProductStats({ products }) {
     products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length || 0
   const topSeller = [...products].sort((a, b) => b.sold - a.sold)[0]
 
-  // Calculate total profit (exclude postage cost)
+  // Calculate total profit with proper USD conversion
   const totalProfit = products.reduce((sum, p) => {
-    const profit = (p.price - (p.cost_price || 0)) * (p.sold || 0)
-    return sum + (isNaN(profit) ? 0 : profit)
-  }, 0)
+    // First convert cost from MYR to USD using the exchange rate
+    const costInUSD = p.cost_price_myr && p.exchange_rate 
+      ? p.cost_price_myr / p.exchange_rate 
+      : (p.cost_price_usd || 0);
+    
+    // Calculate profit per unit in USD
+    const profitPerUnit = p.price - costInUSD - (p.postage_cost || 0);
+    
+    // Calculate total profit for this product
+    const productProfit = profitPerUnit * (p.sold || 0);
+    
+    return sum + (isNaN(productProfit) ? 0 : productProfit);
+  }, 0);
 
   // Calculate average profit per product
-  const avgProfit = products.length > 0 ? totalProfit / products.length : 0
+  const avgProfit = products.length > 0 ? totalProfit / products.length : 0;
+
+  // Calculate profit margin percentage
+  const profitMargin = totalValue > 0 ? (totalProfit / totalValue) * 100 : 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -28,7 +41,7 @@ export default function ProductStats({ products }) {
 
       <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-2xl shadow-lg p-6 flex flex-col items-start transform transition-transform hover:scale-105">
         <h3 className="text-xs font-semibold text-yellow-700 uppercase mb-1 tracking-wide">Total Value</h3>
-        <p className="text-2xl font-bold text-gray-900">${totalValue.toLocaleString()}</p>
+        <p className="text-2xl font-bold text-gray-900">${totalValue.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
       </div>
 
       <div className="bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl shadow-lg p-6 flex flex-col items-start transform transition-transform hover:scale-105">
@@ -44,7 +57,9 @@ export default function ProductStats({ products }) {
       <div className="bg-gradient-to-br from-pink-100 to-pink-50 rounded-2xl shadow-lg p-6 flex flex-col items-start transform transition-transform hover:scale-105">
         <h3 className="text-xs font-semibold text-pink-700 uppercase mb-1 tracking-wide">Total Profit</h3>
         <p className="text-2xl font-bold text-gray-900">${totalProfit.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+        <p className="text-sm text-pink-600">{profitMargin.toFixed(1)}% margin</p>
       </div>
+
       <div className="bg-gradient-to-br from-red-100 to-red-50 rounded-2xl shadow-lg p-6 flex flex-col items-start transform transition-transform hover:scale-105">
         <h3 className="text-xs font-semibold text-red-700 uppercase mb-1 tracking-wide">Avg. Profit/Product</h3>
         <p className="text-2xl font-bold text-gray-900">${avgProfit.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>

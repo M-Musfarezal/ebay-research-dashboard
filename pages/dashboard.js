@@ -7,8 +7,6 @@ import ProductTable from "../components/ProductTable"
 import ProductStats from "../components/ProductStats"
 import AddProductModal from "../components/AddProductModal"
 import FloatingButton from "../components/FloatingButton"
-import PricingCalculator from "../components/PricingCalculator"
-
 export default function Dashboard() {
   const [products, setProducts] = useState([])
   const [filtered, setFiltered] = useState([])
@@ -36,13 +34,30 @@ export default function Dashboard() {
   }, [])
 
   const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false })
-    if (!error) {
+    try {
+      console.log('Fetching products...')
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error('Error fetching products:', error)
+        return
+      }
+
+      console.log('Products fetched:', data)
       setProducts(data)
+      setFiltered(data)
+    } catch (error) {
+      console.error('Error in fetchProducts:', error)
     }
+  }
+
+  const handleProductAdded = async () => {
+    console.log('Product added, refreshing list...')
+    await fetchProducts()
+    setShowModal(false)
   }
 
   const handleLogout = async () => {
@@ -110,35 +125,25 @@ export default function Dashboard() {
   }, [products, search, sortBy])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="min-h-screen">
-        <HeaderBar userEmail={userEmail} onLogout={handleLogout} />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <SearchBar
-            search={search}
-            setSearch={setSearch}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            onExport={handleExport}
-          />
-
-          <ProductStats products={filtered} />
-          <div className="mt-8">
-            <ProductTable products={filtered} onRefresh={fetchProducts} />
-          </div>
-          <div className="mt-8">
-            <PricingCalculator />
-          </div>
-        </main>
-
-        <AddProductModal
+    <div className="min-h-screen bg-gray-50">
+      <HeaderBar email={userEmail} onLogout={handleLogout} />
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <SearchBar value={search} onChange={setSearch} />
+          <FloatingButton onClick={() => setShowModal(true)} />
+        </div>
+        <ProductStats products={filtered} />
+        <ProductTable
+          products={filtered}
+          sortBy={sortBy}
+          onSort={setSortBy}
+          onRefresh={fetchProducts}
+        />        <AddProductModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          onProductAdded={fetchProducts}
+          onProductAdded={handleProductAdded}
         />
-        
-        <FloatingButton onClick={() => setShowModal(true)} />
-      </div>
+      </main>
     </div>
   )
 }
